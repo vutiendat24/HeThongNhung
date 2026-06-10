@@ -1,0 +1,50 @@
+/**
+ * Servo module for pan camera mount.
+ *
+ * Note: Tilt servo removed per design decision (pan-only tracking).
+ */
+
+#ifndef UNIT_TEST
+#include <Arduino.h>
+#include <ESP32Servo.h>
+#endif
+
+#include <math.h>
+
+#include "config.h"
+#include "servos.h"
+
+// ── Servo instances ─────────────────────────────────────────────────────────
+#ifndef UNIT_TEST
+static Servo servo_pan;
+#endif
+
+// ── Servo position state (radians) ──────────────────────────────────────────
+static float servo_pan_rad = 0.0f;
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
+void servos_init() {
+#ifndef UNIT_TEST
+    ESP32PWM::allocateTimer(2);
+    servo_pan.attach(SERVO_PAN_PIN, 500, 2400);
+
+    // Center servo on startup
+    servo_pan.write(SERVO_CENTER);
+#endif
+
+    // 90 degrees = 0 radians in our convention (center)
+    servo_pan_rad = 0.0f;
+}
+
+void servos_set_pan(float radians) {
+    servo_pan_rad = radians;
+
+#ifndef UNIT_TEST
+    // Convert radians to degrees: 0 rad = 90° (center), range maps to 0-180°
+    int deg = constrain((int)(radians * 180.0f / PI + 90.0f), 0, 180);
+    servo_pan.write(deg);
+#endif
+}
+
+float servos_get_pan() { return servo_pan_rad; }
